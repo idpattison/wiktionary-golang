@@ -1,0 +1,5 @@
+*.txt
+*.json
+*.wikitext
+wiktionary-golang
+tmp.go
