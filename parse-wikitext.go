@@ -47,6 +47,8 @@ func parseSection(lw *LanguageWord, section Section) {
 			parsePronunciationSection(lw, section)
 		case "Noun", "Verb", "Adjective":
 			parsePartofSpeechSection(lw, section)
+		case "Translations":
+			parseTranslationSection(lw, section)
 		default:
 			// ignore all others
 		}
@@ -114,8 +116,8 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 		tags := getAllTags(line)
 		for _, tag := range tags {
 			var link LinkedWord
-			link.SourceWord = lw.Word
-			link.SourceLanguage = lw.LanguageCode
+			link.DaughterWord = lw.Word
+			link.DaughterLanguage = lw.LanguageCode
 
 			elems := splitTag(tag[1])
 			// ignore the m tag, it's sometimes used in etymologies, and it's ambiguous
@@ -127,34 +129,34 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 			switch elems["0"] {
 			case "root":
 				link.Relationship = Root
-				link.TargetWord = elems["3"]
-				link.TargetLanguage = elems["2"]
+				link.ParentWord = elems["3"]
+				link.ParentLanguage = elems["2"]
 			case "inh", "inherited":
 				link.Relationship = Inherited
-				link.TargetWord = elems["3"]
-				link.TargetLanguage = elems["2"]
+				link.ParentWord = elems["3"]
+				link.ParentLanguage = elems["2"]
 				if val, ok := elems["5"]; ok {
-					link.Meaning = val
+					link.ParentMeaning = val
 				}
 				// the meaning should appear at slot 4, but sometimes it's at slot 5
 				// this is non-standard, but happens
-				if val, ok := elems["6"]; ok && link.Meaning == "" {
-					link.Meaning = val
+				if val, ok := elems["6"]; ok && link.ParentMeaning == "" {
+					link.ParentMeaning = val
 				}
 				if val, ok := elems["tr"]; ok {
 					link.Transliteration = val
 				}
 			case "cog", "cognate":
 				link.Relationship = Cognate
-				link.TargetWord = elems["2"]
-				link.TargetLanguage = elems["1"]
+				link.ParentWord = elems["2"]
+				link.ParentLanguage = elems["1"]
 				if val, ok := elems["4"]; ok {
-					link.Meaning = val
+					link.ParentMeaning = val
 				}
 				// the meaning should appear at slot 4, but sometimes it's at slot 5
 				// this is non-standard, but happens
-				if val, ok := elems["5"]; ok && link.Meaning == "" {
-					link.Meaning = val
+				if val, ok := elems["5"]; ok && link.ParentMeaning == "" {
+					link.ParentMeaning = val
 				}
 				if val, ok := elems["tr"]; ok {
 					link.Transliteration = val
@@ -163,8 +165,8 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 
 			// if we have a word in a non-Latin script but no transliteration
 			latinRe := regexp.MustCompile(`\p{Latin}`)
-			if len(link.TargetWord) > 0 && !latinRe.MatchString(link.TargetWord) {
-				re := regexp.MustCompile(link.TargetWord + ` *\((.*?)[\),]`)
+			if len(link.ParentWord) > 0 && !latinRe.MatchString(link.ParentWord) {
+				re := regexp.MustCompile(link.ParentWord + ` *\((.*?)[\),]`)
 				match := re.FindStringSubmatch(text)
 				if len(match) > 1 {
 					link.Transliteration = match[1]
@@ -172,7 +174,7 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 			}
 
 			// if the target word exists, save it
-			if link.TargetWord != "" && link.TargetWord != "-" {
+			if link.ParentWord != "" && link.ParentWord != "-" {
 				etym.Words = append(etym.Words, link)
 			}
 		}
@@ -378,6 +380,46 @@ func getHeadwordItem(pos *PartOfSpeech, form string, index int) bool {
 	return false
 }
 
+func parseTranslationSection(lw *LanguageWord, section Section) {
+	var tr []TranslatedWord
+
+	// NB we will only record the first translation block as this will be the principal meaning
+	// many words hav translations of colloquial meanings which are not relevant
+	for _, line := range section.lines {
+		// read lines on until we reach the first {{trans-bottom}} tag, then exit
+		if strings.HasPrefix(line, "{{trans-bottom") {
+			break
+		}
+		if strings.HasPrefix(line, "*") {
+			transTag := searchForTag(line, "t") // NB this should find tt, t+ and tt+ as well
+			if transTag != "" {
+				// we have a translated word - decode the tag
+				var tw TranslatedWord
+				elems := splitTag(transTag)
+				if val, ok := elems["1"]; ok {
+					tw.Language = val
+				}
+				if val, ok := elems["2"]; ok {
+					tw.Word = val
+					if val, ok := elems["tr"]; ok {
+						tw.Transliteration = val
+					}
+					tr = append(tr, tw)
+				}
+			}
+		}
+	}
+
+	// add this section to the current part in the current etymology
+	if len(lw.Etymologies) > 0 && len(tr) > 0 {
+		currentEtym := len(lw.Etymologies) - 1
+		if len(lw.Etymologies[currentEtym].Parts) > 0 {
+			currentPart := len(lw.Etymologies[len(lw.Etymologies)-1].Parts) - 1
+			lw.Etymologies[currentEtym].Parts[currentPart].Translations = tr
+		}
+	}
+}
+
 func getAllTags(text string) [][]string {
 	// return all wikitext tags in the text
 	re := regexp.MustCompile(`\{\{(.*?)\}\}`)
@@ -385,15 +427,15 @@ func getAllTags(text string) [][]string {
 	return match
 }
 
-// func searchForTag(text string, tag string) string {
-// 	// return a tag of form {{head|param1|param2}} if it exists in the given text, otherwise ""
-// 	re := regexp.MustCompile(`\{\{` + tag + `(.*?)\}\}`)
-// 	match := re.FindStringSubmatch(text)
-// 	if len(match) != 0 {
-// 		return match[0]
-// 	}
-// 	return ""
-// }
+func searchForTag(text string, tag string) string {
+	// return a tag of form {{head|param1|param2}} if it exists in the given text, otherwise ""
+	re := regexp.MustCompile(`\{\{` + tag + `(.*?)\}\}`)
+	match := re.FindStringSubmatch(text)
+	if len(match) != 0 {
+		return match[0]
+	}
+	return ""
+}
 
 func splitTag(tag string) map[string]string {
 	// given a tag of form {{head|param1|param2}}, return a map of the components of the tag

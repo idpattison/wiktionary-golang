@@ -35,20 +35,27 @@ const (
 )
 
 type LinkedWord struct {
-	SourceLanguage  string `json:"-"`
-	SourceWord      string `json:"-"`
-	Relationship    string `json:"type"`
-	TargetLanguage  string `json:"lang"`
-	TargetWord      string `json:"word"`
+	DaughterLanguage string `json:"-"`
+	DaughterWord     string `json:"-"`
+	Relationship     string `json:"type"`
+	ParentLanguage   string `json:"lang"`
+	ParentWord       string `json:"word"`
+	ParentMeaning    string `json:"meaning,omitempty"`
+	Transliteration  string `json:"translit,omitempty"`
+}
+
+type TranslatedWord struct {
+	Language        string `json:"lang"`
+	Word            string `json:"word"`
 	Transliteration string `json:"translit,omitempty"`
-	Meaning         string `json:"meaning,omitempty"`
 }
 
 type PartOfSpeech struct {
-	Name       string            `json:"name"`
-	Headword   string            `json:"head,omitempty"`
-	Attributes map[string]string `json:"attrs,omitempty"`
-	Meanings   []string          `json:"meanings,omitempty"`
+	Name         string            `json:"name"`
+	Headword     string            `json:"head,omitempty"`
+	Attributes   map[string]string `json:"attrs,omitempty"`
+	Meanings     []string          `json:"meanings,omitempty"`
+	Translations []TranslatedWord  `json:"trans,omitempty"`
 }
 
 func writeJson(word string, langCode string, lw *LanguageWord) error {
