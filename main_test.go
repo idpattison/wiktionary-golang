@@ -84,6 +84,16 @@ func TestMain(t *testing.T) {
 	if len(part.Meanings) != 7 {
 		t.Fatalf(`lw.Etymologies[0].Parts[0].Meanings: expected length 7, got %v`, len(part.Meanings))
 	}
+	if len(part.Attributes) != 2 {
+		t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes: expected length 2, got %v`, len(part.Attributes))
+	} else {
+		if val, ok := part.Attributes["comparative"]; ok {
+			expected = "redder or more red"
+			if val != expected {
+				t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes["comparative"]: expected %q, got %q`, expected, part.Attributes["comparative"])
+			}
+		}
+	}
 	expected = "(particle physics) Having a color charge of red."
 	if part.Meanings[6] != expected {
 		t.Fatalf(`lw.Etymologies[0].Parts[0].Meanings[6]: expected %q, got %q`, expected, part.Meanings[6])
@@ -94,6 +104,10 @@ func TestMain(t *testing.T) {
 	if part.Name != expPart || part.Headword != expHead {
 		t.Fatalf(`lw.Etymologies[0].Parts[1]: expected %q - %q, got %q - %q`,
 			expPart, expHead, part.Name, part.Headword)
+	}
+	expIpa := "/ɹɛd/"
+	if lw.Ipa != expIpa {
+		t.Fatalf(`lw.Ipa: expected %v, got %v`, expIpa, lw.Ipa)
 	}
 
 }
@@ -112,5 +126,46 @@ func TestMainFrench(t *testing.T) {
 	if part.Name != expPart || part.Headword != expHead {
 		t.Fatalf(`lw.Etymologies[0].Parts[0]: expected %q - %q, got %q - %q`,
 			expPart, expHead, part.Name, part.Headword)
+	}
+}
+
+func TestMainOldEnglish(t *testing.T) {
+	lw, err := processWord("grene", "ang")
+	if err != nil {
+		t.Fatalf(`Error from processWord: %q`, err)
+	}
+	if len(lw.Etymologies[0].Parts) != 1 {
+		t.Fatalf(`lw.Etymologies[0].Parts: expected length 1, got %v`, len(lw.Etymologies[0].Parts))
+	}
+	expPart := "Adjective"
+	expHead := "grēne"
+	part := lw.Etymologies[0].Parts[0]
+	if part.Name != expPart || part.Headword != expHead {
+		t.Fatalf(`lw.Etymologies[0].Parts[0]: expected %q - %q, got %q - %q`,
+			expPart, expHead, part.Name, part.Headword)
+	}
+}
+
+func TestMainProtoGermanic(t *testing.T) {
+	lw, err := processWord("*raudaz", "gem-pro")
+	if err != nil {
+		t.Fatalf(`Error from processWord: %q`, err)
+	}
+	if len(lw.Etymologies[0].Parts) != 1 {
+		t.Fatalf(`lw.Etymologies[0].Parts: expected length 1, got %v`, len(lw.Etymologies[0].Parts))
+	}
+	part := lw.Etymologies[0].Parts[0]
+	if len(part.Meanings) != 1 {
+		t.Fatalf(`lw.Etymologies[0].Parts[0].Meanings: expected length 1, got %v`, len(part.Meanings))
+	}
+	if len(part.Attributes) != 2 {
+		t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes: expected length 2, got %v`, len(part.Attributes))
+	} else {
+		if val, ok := part.Attributes["superlative"]; ok {
+			expected := "*raudōstaz"
+			if val != expected {
+				t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes["superlative"]: expected %q, got %q`, expected, part.Attributes["comparative"])
+			}
+		}
 	}
 }

@@ -1,0 +1,1 @@
+A Go application to parse Wiktionary and convert to JSON

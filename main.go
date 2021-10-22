@@ -37,7 +37,7 @@ func main() {
 func processWord(word string, langCode string) (LanguageWord, error) {
 	nilWord := new(LanguageWord)
 	// get the JSON content for the requested word
-	wordData, err := getWordDataFromWiktionary(word)
+	wordData, err := getWordDataFromWiktionary(word, langCode)
 	if err != nil {
 		return *nilWord, err
 	}

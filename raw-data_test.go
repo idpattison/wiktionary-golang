@@ -30,7 +30,7 @@ func TestConvertWikitext(t *testing.T) {
 func TestGetConvertedTextFromWiktionary(t *testing.T) {
 	inputData := `{{en-adj|redder|more}}`
 	expected := "red (comparative redder or more red, superlative reddest or most red)"
-	outputData, err := getConvertedTextFromWiktionary(inputData, "red")
+	outputData, err := getConvertedTextFromWiktionary(inputData, "red", "en")
 	if err != nil {
 		t.Fatalf(`Error from getConvertedTextFromWiktionary: %q`, err)
 	}

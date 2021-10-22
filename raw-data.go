@@ -17,13 +17,13 @@ type Section struct {
 	lines  []string
 }
 
-func getWordDataFromWiktionary(word string) ([]byte, error) {
+func getWordDataFromWiktionary(word string, langCode string) ([]byte, error) {
 	// for a given word, retrieve the word's JSON data from Wiktionary
 	urlHead := "https://en.wiktionary.org/w/api.php?action=parse&page="
 	urlTail := "&prop=wikitext&format=json"
 
 	// make an HHTP request to Wiktionary
-	url := urlHead + url.QueryEscape(word) + urlTail
+	url := urlHead + url.QueryEscape(getPageTitle(word, langCode)) + urlTail
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -163,10 +163,24 @@ func getLanguageFromCode(code string) string {
 	return languageCodes[code]
 }
 
-func getConvertedTextFromWiktionary(text string, word string) (string, error) {
+func getPageTitle(word string, langCode string) string {
+	var title string
+	// reconstructed words will have an asterisk as the first character and need special handling
+	if strings.HasPrefix(word, "*") {
+		reconLang := "Reconstruction:" + getLanguageFromCode(langCode) + "/"
+		title = strings.Replace(word, "*", reconLang, 1)
+	} else {
+		// but normallly this is just the word
+		title = word
+	}
+	return title
+
+}
+
+func getConvertedTextFromWiktionary(text string, word string, langCode string) (string, error) {
 	// for the given text with tags, retrieve the equivalent text from Wiktionary
 	urlHead := "https://en.wiktionary.org/w/api.php?action=parse&text="
-	urlTail := "&prop=text&title=" + word + "&formatversion=2&format=json"
+	urlTail := "&prop=text&title=" + getPageTitle(word, langCode) + "&formatversion=2&format=json"
 
 	// make an HHTP request to Wiktionary
 	url := urlHead + url.QueryEscape(text) + urlTail
@@ -183,7 +197,7 @@ func getConvertedTextFromWiktionary(text string, word string) (string, error) {
 	returnedText := string(body)
 
 	// strip out the part of interest
-	re := regexp.MustCompile(`text":"(.*?)\\n</p>\\n<!--`)
+	re := regexp.MustCompile(`text":"(.*?)\\n</p.*>\\n<!--`)
 	match := re.FindStringSubmatch(returnedText)
 	if len(match) == 0 {
 		msg := fmt.Sprintf("Text generation error for text '%s'", text)
@@ -200,6 +214,7 @@ func getConvertedTextFromWiktionary(text string, word string) (string, error) {
 	convertedText = strings.ReplaceAll(convertedText, "&#160;", " ")
 	convertedText = strings.ReplaceAll(convertedText, "\u0026#160;", " ")
 	convertedText = strings.ReplaceAll(convertedText, "\u0026#8206;", " ") // left-to-right marker
+	convertedText = strings.ReplaceAll(convertedText, "\u0026lt;", "<")
 
 	return convertedText, nil
 

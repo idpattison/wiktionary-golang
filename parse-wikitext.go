@@ -60,17 +60,24 @@ func parsePronunciationSection(lw *LanguageWord, section Section) {
 	// read each line - it should begin with a * - into the slice
 	for _, line := range section.lines {
 		if strings.HasPrefix(line, "*") {
-			// find the first occurence of an IPA tag and record that separately
-			if ipa == "" {
-				ipaTag := searchForTag(line, "IPA")
-				if ipaTag != "" {
-					ipa = splitTag(ipaTag)["2"]
-				}
-			}
-			// now process the pronunciation line
-			text, _ := getConvertedTextFromWiktionary(line[2:], lw.Word)
+			// process the pronunciation line
+			text, _ := getConvertedTextFromWiktionary(line[2:], lw.Word, lw.LanguageCode)
 			if text != "" {
 				pr = append(pr, text)
+			}
+			// find the first occurence of an IPA tag and record that separately
+			// NB some languages have an automatically generated IPA - for simplicity
+			// we will always use the text version rther than the tag
+			if ipa == "" {
+				re := regexp.MustCompile(`.*(\/.*?\/)`)
+				match := re.FindStringSubmatch(text)
+				if len(match) > 0 {
+					ipa = match[1]
+				}
+				// ipaTag := searchForTag(line, "IPA")
+				// if ipaTag != "" {
+				// 	ipa = splitTag(ipaTag)["2"]
+				// }
 			}
 		}
 	}
@@ -97,7 +104,7 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 	for _, line := range section.lines {
 
 		// get the etymology text
-		text, _ := getConvertedTextFromWiktionary(line, lw.Word)
+		text, _ := getConvertedTextFromWiktionary(line, lw.Word, lw.LanguageCode)
 		etym.Text += text
 		if text != "" {
 			etym.Text += "\n"
@@ -184,13 +191,13 @@ func parsePartofSpeechSection(lw *LanguageWord, section Section) {
 	for _, line := range section.lines {
 		// the headword line will have tags
 		if strings.HasPrefix(line, "{{") && pos.Headword == "" {
-			text, _ := getConvertedTextFromWiktionary(line, lw.Word)
+			text, _ := getConvertedTextFromWiktionary(line, lw.Word, lw.LanguageCode)
 			headTag = line
 			pos.Headword = text
 		}
 		// find meaning lines (but not quotations - maybe later)
 		if strings.HasPrefix(line, "# ") {
-			text, _ := getConvertedTextFromWiktionary(line[2:], lw.Word)
+			text, _ := getConvertedTextFromWiktionary(line[2:], lw.Word, lw.LanguageCode)
 			pos.Meanings = append(pos.Meanings, text)
 		}
 	}
@@ -199,6 +206,12 @@ func parsePartofSpeechSection(lw *LanguageWord, section Section) {
 	switch pos.Name {
 	case "Noun":
 		parseNoun(&pos, headTag)
+	case "Adjective", "Adverb": // adverbs are largely treated the same as adjectives
+		parseAdjective(&pos, headTag)
+	case "Verb":
+		parseVerb(&pos, headTag)
+		// other parts of speech suchas conjunctions are generally simpler
+		// they may have attributes but we will rely on the headword text
 	}
 
 	if len(lw.Etymologies) > 0 {
@@ -288,13 +301,79 @@ func parseNoun(pos *PartOfSpeech, headTag string) {
 
 }
 
+func parseAdjective(pos *PartOfSpeech, headTag string) {
+	// get the headword forms from the text
+	femSing := getHeadwordForm(pos, "feminine singular")
+	mascSing := getHeadwordForm(pos, "masculine singular")
+	femPlural := getHeadwordForm(pos, "feminine plural")
+	mascPlural := getHeadwordForm(pos, "masculine plural")
+	// if we have one of these specific adjective forms, don't check for a normal plural
+	if !femSing && !mascSing && !femPlural && !mascPlural {
+		getHeadwordForm(pos, "plural")
+	}
+	getHeadwordForm(pos, "comparative")
+	getHeadwordForm(pos, "superlative")
+}
+
+func parseVerb(pos *PartOfSpeech, headTag string) {
+	tagMap := splitTag(headTag)
+	// get the headword forms from the text
+	sppp := getHeadwordForm(pos, "simple past and past participle")
+	// if we have this specific combined form, don't check for separate forms
+	if !sppp {
+		getHeadwordForm(pos, "simple past")
+		getHeadwordForm(pos, "past participle")
+	}
+	tpssp := getHeadwordForm(pos, "third-person singular simple present")
+	tpsps := getHeadwordForm(pos, "third-person singular present")
+	fpsp := getHeadwordForm(pos, "first-person singular present")
+	pt := getHeadwordForm(pos, "present tense")
+	if !tpssp && !tpsps && !fpsp && !pt {
+		getHeadwordForm(pos, "present")
+	}
+	fpspt := getHeadwordForm(pos, "first-person singular preterite")
+	if !fpspt {
+		getHeadwordForm(pos, "preterite")
+	}
+	getHeadwordForm(pos, "present participle")
+	getHeadwordForm(pos, "past tense")
+	getHeadwordForm(pos, "past subjunctive")
+	getHeadwordForm(pos, "perfect tense")
+	getHeadwordForm(pos, "imperitive")
+	getHeadwordForm(pos, "infinitive")
+	getHeadwordForm(pos, "auxiliary")
+	getHeadwordForm(pos, "type")  // French verbs use this for auxiliary, defective etc
+	if tagMap["0"] == "de-verb" { // first headword item in German verbs is the type
+		getHeadwordItem(pos, "type", 0)
+	}
+
+}
+
 func getHeadwordForm(pos *PartOfSpeech, form string) bool {
 	// get the required form from the text
 	re := regexp.MustCompile(form + ` *(.*?)[\),]`)
 	match := re.FindStringSubmatch(pos.Headword)
 	if len(match) > 1 {
-		pos.Attributes[form] = match[1]
-		return true
+		if len(match[1]) > 0 {
+			pos.Attributes[form] = match[1]
+			return true
+		}
+	}
+	return false
+}
+
+func getHeadwordItem(pos *PartOfSpeech, form string, index int) bool {
+	// get the part of the headword in braces then split by commas
+	re := regexp.MustCompile(`.*\((.*?)\)$`)
+	match := re.FindStringSubmatch(pos.Headword)
+	if len(match) != 0 {
+		items := strings.Split(match[1], ",")
+		if len(items) > index {
+			if len(items[index]) > 0 {
+				pos.Attributes[form] = items[index]
+				return true
+			}
+		}
 	}
 	return false
 }
@@ -306,15 +385,15 @@ func getAllTags(text string) [][]string {
 	return match
 }
 
-func searchForTag(text string, tag string) string {
-	// return a tag of form {{head|param1|param2}} if it exists in the given text, otherwise ""
-	re := regexp.MustCompile(`\{\{` + tag + `(.*?)\}\}`)
-	match := re.FindStringSubmatch(text)
-	if len(match) != 0 {
-		return match[0]
-	}
-	return ""
-}
+// func searchForTag(text string, tag string) string {
+// 	// return a tag of form {{head|param1|param2}} if it exists in the given text, otherwise ""
+// 	re := regexp.MustCompile(`\{\{` + tag + `(.*?)\}\}`)
+// 	match := re.FindStringSubmatch(text)
+// 	if len(match) != 0 {
+// 		return match[0]
+// 	}
+// 	return ""
+// }
 
 func splitTag(tag string) map[string]string {
 	// given a tag of form {{head|param1|param2}}, return a map of the components of the tag
