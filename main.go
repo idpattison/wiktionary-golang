@@ -67,7 +67,7 @@ func processWord(word string, langCode string) (LanguageWord, error) {
 	}
 
 	// for debug purposes, write the wikitext to a file
-	fileName := langCode + "-" + word + "-wiki.txt"
+	fileName := langCode + "-" + word + ".wikitext"
 	os.WriteFile(fileName, []byte(wikitext), 0666)
 
 	return lw, nil

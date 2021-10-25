@@ -40,25 +40,25 @@ func TestMain(t *testing.T) {
 	expLang := "ine-pro"
 	expWord := "*h₁rewdʰ-"
 	word := lw.Etymologies[0].Words[0]
-	if word.Relationship != expType || word.ParentLanguage != expLang || word.ParentWord != expWord {
+	if word.Relationship != expType || word.Language != expLang || word.Word != expWord {
 		t.Fatalf(`lw.Etymologies[0].Words[0]: expected type %q lang %q word %q, got %q %q %q`,
-			expType, expLang, expWord, word.Relationship, word.ParentLanguage, word.ParentWord)
+			expType, expLang, expWord, word.Relationship, word.Language, word.Word)
 	}
 	expType = "inherited"
 	expLang = "enm"
 	expWord = "red"
 	word = lw.Etymologies[0].Words[1]
-	if word.Relationship != expType || word.ParentLanguage != expLang || word.ParentWord != expWord {
+	if word.Relationship != expType || word.Language != expLang || word.Word != expWord {
 		t.Fatalf(`lw.Etymologies[0].Words[1]: expected type %q lang %q word %q, got %q %q %q`,
-			expType, expLang, expWord, word.Relationship, word.ParentLanguage, word.ParentWord)
+			expType, expLang, expWord, word.Relationship, word.Language, word.Word)
 	}
 	expType = "cognate"
 	expLang = "fy"
 	expWord = "read"
 	word = lw.Etymologies[0].Words[5]
-	if word.Relationship != expType || word.ParentLanguage != expLang || word.ParentWord != expWord {
+	if word.Relationship != expType || word.Language != expLang || word.Word != expWord {
 		t.Fatalf(`lw.Etymologies[0].Words[5]: expected type %q lang %q word %q, got %q %q %q`,
-			expType, expLang, expWord, word.Relationship, word.ParentLanguage, word.ParentWord)
+			expType, expLang, expWord, word.Relationship, word.Language, word.Word)
 	}
 
 	// test the function to pull transliterations from the text version
@@ -66,9 +66,9 @@ func TestMain(t *testing.T) {
 	expWord = "ἐρυθρός"
 	expTrans := "eruthrós"
 	word = lw.Etymologies[0].Words[16]
-	if word.ParentLanguage != expLang || word.ParentWord != expWord || word.Transliteration != expTrans {
+	if word.Language != expLang || word.Word != expWord || word.Transliteration != expTrans {
 		t.Fatalf(`lw.Etymologies[0].Words[16]: expected lang %q word %q trans %q, got %q %q %q`,
-			expLang, expWord, expTrans, word.ParentLanguage, word.ParentWord, word.Transliteration)
+			expLang, expWord, expTrans, word.Language, word.Word, word.Transliteration)
 	}
 
 	// test translations

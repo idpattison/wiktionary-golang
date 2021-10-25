@@ -35,13 +35,11 @@ const (
 )
 
 type LinkedWord struct {
-	DaughterLanguage string `json:"-"`
-	DaughterWord     string `json:"-"`
-	Relationship     string `json:"type"`
-	ParentLanguage   string `json:"lang"`
-	ParentWord       string `json:"word"`
-	ParentMeaning    string `json:"meaning,omitempty"`
-	Transliteration  string `json:"translit,omitempty"`
+	Relationship    string `json:"type"`
+	Language        string `json:"lang"`
+	Word            string `json:"word"`
+	Meaning         string `json:"meaning,omitempty"`
+	Transliteration string `json:"translit,omitempty"`
 }
 
 type TranslatedWord struct {

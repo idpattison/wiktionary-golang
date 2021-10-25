@@ -49,6 +49,8 @@ func parseSection(lw *LanguageWord, section Section) {
 			parsePartofSpeechSection(lw, section)
 		case "Translations":
 			parseTranslationSection(lw, section)
+		case "Descendants":
+			parseDescendantSection(lw, section)
 		default:
 			// ignore all others
 		}
@@ -116,8 +118,6 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 		tags := getAllTags(line)
 		for _, tag := range tags {
 			var link LinkedWord
-			link.DaughterWord = lw.Word
-			link.DaughterLanguage = lw.LanguageCode
 
 			elems := splitTag(tag[1])
 			// ignore the m tag, it's sometimes used in etymologies, and it's ambiguous
@@ -129,34 +129,34 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 			switch elems["0"] {
 			case "root":
 				link.Relationship = Root
-				link.ParentWord = elems["3"]
-				link.ParentLanguage = elems["2"]
+				link.Word = elems["3"]
+				link.Language = elems["2"]
 			case "inh", "inherited":
 				link.Relationship = Inherited
-				link.ParentWord = elems["3"]
-				link.ParentLanguage = elems["2"]
+				link.Word = elems["3"]
+				link.Language = elems["2"]
 				if val, ok := elems["5"]; ok {
-					link.ParentMeaning = val
+					link.Meaning = val
 				}
 				// the meaning should appear at slot 4, but sometimes it's at slot 5
 				// this is non-standard, but happens
-				if val, ok := elems["6"]; ok && link.ParentMeaning == "" {
-					link.ParentMeaning = val
+				if val, ok := elems["6"]; ok && link.Meaning == "" {
+					link.Meaning = val
 				}
 				if val, ok := elems["tr"]; ok {
 					link.Transliteration = val
 				}
 			case "cog", "cognate":
 				link.Relationship = Cognate
-				link.ParentWord = elems["2"]
-				link.ParentLanguage = elems["1"]
+				link.Word = elems["2"]
+				link.Language = elems["1"]
 				if val, ok := elems["4"]; ok {
-					link.ParentMeaning = val
+					link.Meaning = val
 				}
 				// the meaning should appear at slot 4, but sometimes it's at slot 5
 				// this is non-standard, but happens
-				if val, ok := elems["5"]; ok && link.ParentMeaning == "" {
-					link.ParentMeaning = val
+				if val, ok := elems["5"]; ok && link.Meaning == "" {
+					link.Meaning = val
 				}
 				if val, ok := elems["tr"]; ok {
 					link.Transliteration = val
@@ -165,8 +165,8 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 
 			// if we have a word in a non-Latin script but no transliteration
 			latinRe := regexp.MustCompile(`\p{Latin}`)
-			if len(link.ParentWord) > 0 && !latinRe.MatchString(link.ParentWord) {
-				re := regexp.MustCompile(link.ParentWord + ` *\((.*?)[\),]`)
+			if len(link.Word) > 0 && !latinRe.MatchString(link.Word) {
+				re := regexp.MustCompile(link.Word + ` *\((.*?)[\),]`)
 				match := re.FindStringSubmatch(text)
 				if len(match) > 1 {
 					link.Transliteration = match[1]
@@ -174,7 +174,7 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 			}
 
 			// if the target word exists, save it
-			if link.ParentWord != "" && link.ParentWord != "-" {
+			if link.Word != "" && link.Word != "-" {
 				etym.Words = append(etym.Words, link)
 			}
 		}
@@ -404,6 +404,7 @@ func parseTranslationSection(lw *LanguageWord, section Section) {
 					if val, ok := elems["tr"]; ok {
 						tw.Transliteration = val
 					}
+
 					tr = append(tr, tw)
 				}
 			}
@@ -418,6 +419,34 @@ func parseTranslationSection(lw *LanguageWord, section Section) {
 			lw.Etymologies[currentEtym].Parts[currentPart].Translations = tr
 		}
 	}
+}
+
+func parseDescendantSection(lw *LanguageWord, section Section) {
+	// read in all descendant words and add them to LinkedWords in the current Etymology
+	for _, line := range section.lines {
+		if strings.HasPrefix(line, "*") {
+			descTag := searchForTag(line, "desc") // NB this will also pick up desctree
+			if descTag != "" {
+				// decode the tag
+				var link LinkedWord
+				elems := splitTag(descTag)
+				if val, ok := elems["1"]; ok {
+					link.Language = val
+					if val, ok := elems["2"]; ok {
+						link.Word = val
+						if _, ok := elems["bor"]; ok {
+							link.Relationship = Descendant
+						}
+						// add to the current etymology
+						if len(lw.Etymologies) > 0 {
+							lw.Etymologies[len(lw.Etymologies)-1].Words = append(lw.Etymologies[len(lw.Etymologies)-1].Words, link)
+						}
+					}
+				}
+			}
+		}
+	}
+
 }
 
 func getAllTags(text string) [][]string {
