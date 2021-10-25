@@ -6,23 +6,24 @@ import (
 )
 
 type LanguageWord struct {
-	Word             string      `json:"word"`
-	Meaning          string      `json:"meaning,omitempty"`
-	LanguageName     string      `json:"lang"`
-	LanguageCode     string      `json:"lang-code"`
-	AlternativeForms string      `json:"alts,omitempty"`
-	Pronunciations   []string    `json:"pron,omitempty"`
-	Ipa              string      `json:"ipa,omitempty"`
-	Etymologies      []Etymology `json:"etym,omitempty"`
+	Word           string      `json:"word"`
+	Meaning        string      `json:"meaning,omitempty"`
+	LanguageName   string      `json:"lang"`
+	LanguageCode   string      `json:"lang-code"`
+	Pronunciations []string    `json:"pron,omitempty"`
+	Ipa            string      `json:"ipa,omitempty"`
+	Etymologies    []Etymology `json:"etym,omitempty"`
+	Anagrams       string      `json:"anag,omitempty"`
 }
 
 type Etymology struct {
-	Name           string         `json:"name"`
-	Text           string         `json:"text,omitempty"`
-	Words          []LinkedWord   `json:"words,omitempty"`
-	Parts          []PartOfSpeech `json:"parts,omitempty"`
-	Pronunciations []string       `json:"pron,omitempty"`
-	Ipa            string         `json:"ipa,omitempty"`
+	Name             string         `json:"name"`
+	AlternativeForms string         `json:"alts,omitempty"`
+	Text             string         `json:"text,omitempty"`
+	Words            []LinkedWord   `json:"words,omitempty"`
+	Parts            []PartOfSpeech `json:"parts,omitempty"`
+	Pronunciations   []string       `json:"pron,omitempty"`
+	Ipa              string         `json:"ipa,omitempty"`
 }
 
 // relationships for LinkedWord
@@ -54,6 +55,8 @@ type PartOfSpeech struct {
 	Attributes   map[string]string `json:"attrs,omitempty"`
 	Meanings     []string          `json:"meanings,omitempty"`
 	Translations []TranslatedWord  `json:"trans,omitempty"`
+	Synonyms     string            `json:"syn,omitempty"`
+	Antonyms     string            `json:"ant,omitempty"`
 }
 
 func writeJson(word string, langCode string, lw *LanguageWord) error {

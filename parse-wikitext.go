@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func parseSections(word string, langCode string, sections []Section) LanguageWord {
+func parseSections(word string, langCode string, sections []Section, options WiktionaryOptions) LanguageWord {
 	// define the LanguageWord
 	lw := LanguageWord{
 		Word:         word,
@@ -16,7 +16,7 @@ func parseSections(word string, langCode string, sections []Section) LanguageWor
 
 	// iterate over the sections - ignore the first as it's the language header
 	for i := 1; i < len(sections); i++ {
-		parseSection(&lw, sections[i])
+		parseSection(&lw, sections[i], options)
 	}
 
 	// assign a meaning - take the first entry in the first part of the first etymology
@@ -31,26 +31,38 @@ func parseSections(word string, langCode string, sections []Section) LanguageWor
 	return lw
 }
 
-func parseSection(lw *LanguageWord, section Section) {
+func parseSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
 	// determine the section type
 	sectionType := strings.Trim(section.header, "=")
 
 	// process each type separately
 	// etymology requires special handling as it may have numbers after it
 	if strings.HasPrefix(sectionType, "Etymology") {
-		parseEtymologySection(lw, section)
+		parseEtymologySection(lw, section, options)
 	} else {
 
 		// process others
 		switch sectionType {
 		case "Pronunciation":
-			parsePronunciationSection(lw, section)
+			if sectionRequired(options, Sec_IPA) || sectionRequired(options, Sec_Extended_Pronunciation) {
+				parsePronunciationSection(lw, section, options)
+			}
 		case "Noun", "Verb", "Adjective":
-			parsePartofSpeechSection(lw, section)
+			if sectionRequired(options, Sec_Parts) {
+				parsePartofSpeechSection(lw, section, options)
+			}
 		case "Translations":
-			parseTranslationSection(lw, section)
+			if sectionRequired(options, Sec_Translations) {
+				parseTranslationSection(lw, section, options)
+			}
 		case "Descendants":
-			parseDescendantSection(lw, section)
+			if sectionRequired(options, Sec_Etymology_Words) {
+				parseDescendantSection(lw, section, options)
+			}
+		case "Synonyms", "Antonyms", "Anagrams", "Alternative forms":
+			if sectionRequired(options, Sec_Synonyms) || sectionRequired(options, Sec_Antonyms) {
+				parseOtherSections(lw, section, options)
+			}
 		default:
 			// ignore all others
 		}
@@ -58,30 +70,31 @@ func parseSection(lw *LanguageWord, section Section) {
 	}
 }
 
-func parsePronunciationSection(lw *LanguageWord, section Section) {
+func parsePronunciationSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
 	var pr []string
 	var ipa string
+	var text string
 	// read each line - it should begin with a * - into the slice
 	for _, line := range section.lines {
 		if strings.HasPrefix(line, "*") {
 			// process the pronunciation line
-			text, _ := getConvertedTextFromWiktionary(line[2:], lw.Word, lw.LanguageCode)
-			if text != "" {
-				pr = append(pr, text)
+			text, _ = getConvertedTextFromWiktionary(line[2:], lw.Word, lw.LanguageCode)
+			if sectionRequired(options, Sec_Extended_Pronunciation) {
+				if text != "" {
+					pr = append(pr, text)
+				}
 			}
 			// find the first occurence of an IPA tag and record that separately
 			// NB some languages have an automatically generated IPA - for simplicity
 			// we will always use the text version rther than the tag
-			if ipa == "" {
-				re := regexp.MustCompile(`.*(\/.*?\/)`)
-				match := re.FindStringSubmatch(text)
-				if len(match) > 0 {
-					ipa = match[1]
+			if sectionRequired(options, Sec_IPA) {
+				if ipa == "" {
+					re := regexp.MustCompile(`.*(\/.*?\/)`)
+					match := re.FindStringSubmatch(text)
+					if len(match) > 0 {
+						ipa = match[1]
+					}
 				}
-				// ipaTag := searchForTag(line, "IPA")
-				// if ipaTag != "" {
-				// 	ipa = splitTag(ipaTag)["2"]
-				// }
 			}
 		}
 	}
@@ -99,7 +112,7 @@ func parsePronunciationSection(lw *LanguageWord, section Section) {
 	}
 }
 
-func parseEtymologySection(lw *LanguageWord, section Section) {
+func parseEtymologySection(lw *LanguageWord, section Section, options WiktionaryOptions) {
 	var etym Etymology
 	etym.Name = strings.Trim(section.header, "=")
 
@@ -108,74 +121,80 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 	for _, line := range section.lines {
 
 		// get the etymology text
-		text, _ := getConvertedTextFromWiktionary(line, lw.Word, lw.LanguageCode)
-		etym.Text += text
-		if text != "" {
-			etym.Text += "\n"
-		}
-
-		// get the word link tags from the etymology
-		tags := getAllTags(line)
-		for _, tag := range tags {
-			var link LinkedWord
-
-			elems := splitTag(tag[1])
-			// ignore the m tag, it's sometimes used in etymologies, and it's ambiguous
-			if elems["0"] == "m" || elems["0"] == "mention" {
-				continue
+		if sectionRequired(options, Sec_Etymology_Text) || sectionRequired(options, Sec_Etymology_Words) {
+			text, _ := getConvertedTextFromWiktionary(line, lw.Word, lw.LanguageCode)
+			if sectionRequired(options, Sec_Etymology_Text) {
+				etym.Text += text
+			}
+			if text != "" {
+				etym.Text += "\n"
 			}
 
-			// depending on the tag type, process accordingly
-			switch elems["0"] {
-			case "root":
-				link.Relationship = Root
-				link.Word = elems["3"]
-				link.Language = elems["2"]
-			case "inh", "inherited":
-				link.Relationship = Inherited
-				link.Word = elems["3"]
-				link.Language = elems["2"]
-				if val, ok := elems["5"]; ok {
-					link.Meaning = val
-				}
-				// the meaning should appear at slot 4, but sometimes it's at slot 5
-				// this is non-standard, but happens
-				if val, ok := elems["6"]; ok && link.Meaning == "" {
-					link.Meaning = val
-				}
-				if val, ok := elems["tr"]; ok {
-					link.Transliteration = val
-				}
-			case "cog", "cognate":
-				link.Relationship = Cognate
-				link.Word = elems["2"]
-				link.Language = elems["1"]
-				if val, ok := elems["4"]; ok {
-					link.Meaning = val
-				}
-				// the meaning should appear at slot 4, but sometimes it's at slot 5
-				// this is non-standard, but happens
-				if val, ok := elems["5"]; ok && link.Meaning == "" {
-					link.Meaning = val
-				}
-				if val, ok := elems["tr"]; ok {
-					link.Transliteration = val
-				}
-			}
+			// get the word link tags from the etymology
+			if sectionRequired(options, Sec_Etymology_Words) {
+				tags := getAllTags(line)
+				for _, tag := range tags {
+					var link LinkedWord
 
-			// if we have a word in a non-Latin script but no transliteration
-			latinRe := regexp.MustCompile(`\p{Latin}`)
-			if len(link.Word) > 0 && !latinRe.MatchString(link.Word) {
-				re := regexp.MustCompile(link.Word + ` *\((.*?)[\),]`)
-				match := re.FindStringSubmatch(text)
-				if len(match) > 1 {
-					link.Transliteration = match[1]
-				}
-			}
+					elems := splitTag(tag[1])
+					// ignore the m tag, it's sometimes used in etymologies, and it's ambiguous
+					if elems["0"] == "m" || elems["0"] == "mention" {
+						continue
+					}
 
-			// if the target word exists, save it
-			if link.Word != "" && link.Word != "-" {
-				etym.Words = append(etym.Words, link)
+					// depending on the tag type, process accordingly
+					switch elems["0"] {
+					case "root":
+						link.Relationship = Root
+						link.Word = elems["3"]
+						link.Language = elems["2"]
+					case "inh", "inherited":
+						link.Relationship = Inherited
+						link.Word = elems["3"]
+						link.Language = elems["2"]
+						if val, ok := elems["5"]; ok {
+							link.Meaning = val
+						}
+						// the meaning should appear at slot 4, but sometimes it's at slot 5
+						// this is non-standard, but happens
+						if val, ok := elems["6"]; ok && link.Meaning == "" {
+							link.Meaning = val
+						}
+						if val, ok := elems["tr"]; ok {
+							link.Transliteration = val
+						}
+					case "cog", "cognate":
+						link.Relationship = Cognate
+						link.Word = elems["2"]
+						link.Language = elems["1"]
+						if val, ok := elems["4"]; ok {
+							link.Meaning = val
+						}
+						// the meaning should appear at slot 4, but sometimes it's at slot 5
+						// this is non-standard, but happens
+						if val, ok := elems["5"]; ok && link.Meaning == "" {
+							link.Meaning = val
+						}
+						if val, ok := elems["tr"]; ok {
+							link.Transliteration = val
+						}
+					}
+
+					// if we have a word in a non-Latin script but no transliteration
+					latinRe := regexp.MustCompile(`\p{Latin}`)
+					if len(link.Word) > 0 && !latinRe.MatchString(link.Word) {
+						re := regexp.MustCompile(link.Word + ` *\((.*?)[\),]`)
+						match := re.FindStringSubmatch(text)
+						if len(match) > 1 {
+							link.Transliteration = match[1]
+						}
+					}
+
+					// if the target word exists, save it
+					if link.Word != "" && link.Word != "-" {
+						etym.Words = append(etym.Words, link)
+					}
+				}
 			}
 		}
 	}
@@ -183,7 +202,7 @@ func parseEtymologySection(lw *LanguageWord, section Section) {
 	lw.Etymologies = append(lw.Etymologies, etym)
 }
 
-func parsePartofSpeechSection(lw *LanguageWord, section Section) {
+func parsePartofSpeechSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
 	var pos PartOfSpeech
 	pos.Attributes = make(map[string]string)
 	pos.Name = strings.Trim(section.header, "=")
@@ -198,22 +217,26 @@ func parsePartofSpeechSection(lw *LanguageWord, section Section) {
 			pos.Headword = text
 		}
 		// find meaning lines (but not quotations - maybe later)
-		if strings.HasPrefix(line, "# ") {
-			text, _ := getConvertedTextFromWiktionary(line[2:], lw.Word, lw.LanguageCode)
-			pos.Meanings = append(pos.Meanings, text)
+		if sectionRequired(options, Sec_Meanings) {
+			if strings.HasPrefix(line, "# ") {
+				text, _ := getConvertedTextFromWiktionary(line[2:], lw.Word, lw.LanguageCode)
+				pos.Meanings = append(pos.Meanings, text)
+			}
 		}
 	}
 
 	// process attributes - depends on the part of speech type
-	switch pos.Name {
-	case "Noun":
-		parseNoun(&pos, headTag)
-	case "Adjective", "Adverb": // adverbs are largely treated the same as adjectives
-		parseAdjective(&pos, headTag)
-	case "Verb":
-		parseVerb(&pos, headTag)
-		// other parts of speech suchas conjunctions are generally simpler
-		// they may have attributes but we will rely on the headword text
+	if sectionRequired(options, Sec_Part_Attributes) {
+		switch pos.Name {
+		case "Noun":
+			parseNoun(&pos, headTag)
+		case "Adjective", "Adverb": // adverbs are largely treated the same as adjectives
+			parseAdjective(&pos, headTag)
+		case "Verb":
+			parseVerb(&pos, headTag)
+			// other parts of speech suchas conjunctions are generally simpler
+			// they may have attributes but we will rely on the headword text
+		}
 	}
 
 	if len(lw.Etymologies) > 0 {
@@ -380,7 +403,7 @@ func getHeadwordItem(pos *PartOfSpeech, form string, index int) bool {
 	return false
 }
 
-func parseTranslationSection(lw *LanguageWord, section Section) {
+func parseTranslationSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
 	var tr []TranslatedWord
 
 	// NB we will only record the first translation block as this will be the principal meaning
@@ -421,7 +444,7 @@ func parseTranslationSection(lw *LanguageWord, section Section) {
 	}
 }
 
-func parseDescendantSection(lw *LanguageWord, section Section) {
+func parseDescendantSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
 	// read in all descendant words and add them to LinkedWords in the current Etymology
 	for _, line := range section.lines {
 		if strings.HasPrefix(line, "*") {
@@ -447,6 +470,59 @@ func parseDescendantSection(lw *LanguageWord, section Section) {
 		}
 	}
 
+}
+
+func parseOtherSections(lw *LanguageWord, section Section, options WiktionaryOptions) {
+	// used for synonyms, antonyms and other sections where we just return the text
+	var secText string
+	header := strings.Trim(section.header, "=")
+	for _, line := range section.lines {
+		if strings.HasPrefix(line, "*") {
+			if (sectionRequired(options, Sec_Synonyms) && header == "Synonyms") ||
+				(sectionRequired(options, Sec_Antonyms) && header == "Antonyms") ||
+				(sectionRequired(options, Sec_Anagrams) && header == "Anagrams") ||
+				(sectionRequired(options, Sec_Alternatives) && header == "Alternative forms") {
+				text, _ := getConvertedTextFromWiktionary(line[2:], lw.Word, lw.LanguageCode)
+				if text != "" {
+					secText += text + "\n"
+				}
+			}
+		}
+	}
+
+	// sections that live at the LanguageWord level
+	if header == "Anagrams" {
+		if sectionRequired(options, Sec_Anagrams) && secText != "" {
+			lw.Anagrams = secText
+		}
+		return
+	}
+
+	// sections that live at the Etymology level
+	currentEtym := len(lw.Etymologies) - 1
+	if currentEtym < 0 {
+		return
+	}
+	if header == "Alternative forms" {
+		if sectionRequired(options, Sec_Alternatives) && secText != "" {
+			lw.Etymologies[currentEtym].AlternativeForms = secText
+		}
+		return
+	}
+
+	// sections that live at the PartOfSpeech level
+	currentPart := len(lw.Etymologies[currentEtym].Parts) - 1
+	if currentPart < 0 {
+		return
+	}
+	if secText != "" {
+		switch header {
+		case "Synonyms":
+			lw.Etymologies[currentEtym].Parts[currentPart].Synonyms = secText
+		case "Antonyms":
+			lw.Etymologies[currentEtym].Parts[currentPart].Antonyms = secText
+		}
+	}
 }
 
 func getAllTags(text string) [][]string {
@@ -480,4 +556,9 @@ func splitTag(tag string) map[string]string {
 		}
 	}
 	return tagMap
+}
+
+func sectionRequired(options WiktionaryOptions, section int16) bool {
+	b := options.RequiredSections&section > 0
+	return b
 }

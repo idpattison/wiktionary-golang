@@ -29,7 +29,7 @@ func main() {
 	// text = "{{IPA|en|/\u0279\u025bd/|[\u027b\u02b7\u025b\u02d1d\u0325]}}"
 	// println(text)
 
-	_, err := wiktionary.ProcessWord(word, langCode)
+	_, err := wiktionary.GetWord(word, langCode)
 	if err != nil {
 		log.Fatalln(err)
 	}

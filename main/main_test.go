@@ -7,9 +7,9 @@ import (
 )
 
 func TestMain(t *testing.T) {
-	lw, err := wiktionary.ProcessWord("red", "en")
+	lw, err := wiktionary.GetWord("red", "en")
 	if err != nil {
-		t.Fatalf(`Error from processWord: %q`, err)
+		t.Fatalf(`Error from GetWord: %q`, err)
 	}
 	expected := "Having red as its color."
 	if lw.Meaning != expected {
@@ -123,13 +123,39 @@ func TestMain(t *testing.T) {
 	if lw.Ipa != expIpa {
 		t.Fatalf(`lw.Ipa: expected %v, got %v`, expIpa, lw.Ipa)
 	}
+	expAntonyms := "(having red as its colour): nonred, unred\n(having red as its colour charge): antired\n"
+	part = lw.Etymologies[0].Parts[0]
+	if part.Antonyms != expAntonyms {
+		t.Fatalf(`lw.Etymologies[0].Parts[0]: expected antonyms %q, got %q`, expAntonyms, part.Antonyms)
+	}
+
+}
+
+func TestMainPartial(t *testing.T) {
+	// using the core settings, we should get a meaning but not a translation
+	var options wiktionary.WiktionaryOptions
+	options.RequiredSections = wiktionary.Sec_Core
+	options.RequiredLanguages = []string{"all"}
+
+	lw, err := wiktionary.GetWordWithOptions("red", "en", options)
+	if err != nil {
+		t.Fatalf(`Error from GetWord: %q`, err)
+	}
+	expected := "Having red as its color."
+	if lw.Meaning != expected {
+		t.Fatalf(`lw.Meaning: expected %q, got %q`, expected, lw.Meaning)
+	}
+	part := lw.Etymologies[0].Parts[1]
+	if len(part.Translations) != 0 {
+		t.Fatalf(`lw.Etymologies[0].Parts[1].Translations: expected length 0, got %v`, len(part.Translations))
+	}
 
 }
 
 func TestMainFrench(t *testing.T) {
-	lw, err := wiktionary.ProcessWord("rouge", "fr")
+	lw, err := wiktionary.GetWord("rouge", "fr")
 	if err != nil {
-		t.Fatalf(`Error from processWord: %q`, err)
+		t.Fatalf(`Error from GetWord: %q`, err)
 	}
 	if len(lw.Etymologies[0].Parts) != 2 {
 		t.Fatalf(`lw.Etymologies[0].Parts: expected length 2, got %v`, len(lw.Etymologies[0].Parts))
@@ -144,9 +170,9 @@ func TestMainFrench(t *testing.T) {
 }
 
 func TestMainOldEnglish(t *testing.T) {
-	lw, err := wiktionary.ProcessWord("grene", "ang")
+	lw, err := wiktionary.GetWord("grene", "ang")
 	if err != nil {
-		t.Fatalf(`Error from processWord: %q`, err)
+		t.Fatalf(`Error from GetWord: %q`, err)
 	}
 	if len(lw.Etymologies[0].Parts) != 1 {
 		t.Fatalf(`lw.Etymologies[0].Parts: expected length 1, got %v`, len(lw.Etymologies[0].Parts))
@@ -161,9 +187,9 @@ func TestMainOldEnglish(t *testing.T) {
 }
 
 func TestMainProtoGermanic(t *testing.T) {
-	lw, err := wiktionary.ProcessWord("*raudaz", "gem-pro")
+	lw, err := wiktionary.GetWord("*raudaz", "gem-pro")
 	if err != nil {
-		t.Fatalf(`Error from processWord: %q`, err)
+		t.Fatalf(`Error from GetWord: %q`, err)
 	}
 	if len(lw.Etymologies[0].Parts) != 1 {
 		t.Fatalf(`lw.Etymologies[0].Parts: expected length 1, got %v`, len(lw.Etymologies[0].Parts))
