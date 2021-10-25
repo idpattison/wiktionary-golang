@@ -1,40 +1,8 @@
-package main
+package wiktionary
 
-import (
-	"log"
-	"os"
-)
+import "os"
 
-func main() {
-	// fetch the word or list of words
-	// if the word json file exists locally, use that
-	// otherwise fetch the wikitext from wiktionary
-	// process the word and write the outputs
-
-	// get the required word - if no language given then we assume English
-	var word string
-	langCode := "en"
-	if len(os.Args) < 2 {
-		word = "red" // if no args (arg 0 is the program name) then assume word = red for testing
-	} else {
-		word = os.Args[1]
-	}
-	if len(os.Args) > 2 {
-		langCode = os.Args[2] // capture the language if specified
-	}
-
-	// var text string
-	// text = "{{IPA|en|/\u0279\u025bd/|[\u027b\u02b7\u025b\u02d1d\u0325]}}"
-	// println(text)
-
-	_, err := processWord(word, langCode)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-}
-
-func processWord(word string, langCode string) (LanguageWord, error) {
+func ProcessWord(word string, langCode string) (LanguageWord, error) {
 	nilWord := new(LanguageWord)
 	// get the JSON content for the requested word
 	wordData, err := getWordDataFromWiktionary(word, langCode)

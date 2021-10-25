@@ -1,4 +1,4 @@
-package main
+package wiktionary
 
 var languageCodes = map[string]string{
 	"aa":          "Afar",

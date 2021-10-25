@@ -1,9 +1,13 @@
 package main
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/ianpattison-google/wiktionary-golang"
+)
 
 func TestMain(t *testing.T) {
-	lw, err := processWord("red", "en")
+	lw, err := wiktionary.ProcessWord("red", "en")
 	if err != nil {
 		t.Fatalf(`Error from processWord: %q`, err)
 	}
@@ -123,7 +127,7 @@ func TestMain(t *testing.T) {
 }
 
 func TestMainFrench(t *testing.T) {
-	lw, err := processWord("rouge", "fr")
+	lw, err := wiktionary.ProcessWord("rouge", "fr")
 	if err != nil {
 		t.Fatalf(`Error from processWord: %q`, err)
 	}
@@ -140,7 +144,7 @@ func TestMainFrench(t *testing.T) {
 }
 
 func TestMainOldEnglish(t *testing.T) {
-	lw, err := processWord("grene", "ang")
+	lw, err := wiktionary.ProcessWord("grene", "ang")
 	if err != nil {
 		t.Fatalf(`Error from processWord: %q`, err)
 	}
@@ -157,7 +161,7 @@ func TestMainOldEnglish(t *testing.T) {
 }
 
 func TestMainProtoGermanic(t *testing.T) {
-	lw, err := processWord("*raudaz", "gem-pro")
+	lw, err := wiktionary.ProcessWord("*raudaz", "gem-pro")
 	if err != nil {
 		t.Fatalf(`Error from processWord: %q`, err)
 	}
