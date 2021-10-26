@@ -135,7 +135,7 @@ func TestMainPartial(t *testing.T) {
 	// using the core settings, we should get a meaning but not a translation
 	var options wiktionary.WiktionaryOptions
 	options.RequiredSections = wiktionary.Sec_Core
-	options.RequiredLanguages = []string{"all"}
+	options.RequiredLanguages = wiktionary.AllLanguages
 
 	lw, err := wiktionary.GetWordWithOptions("red", "en", options)
 	if err != nil {
@@ -177,6 +177,12 @@ func TestGetTranslations(t *testing.T) {
 	}
 	if len(tr) != 3 {
 		t.Fatalf(`tr: expected length 3, got %v`, len(tr))
+	}
+
+	// test the Indo European subset
+	tr2, _ := wiktionary.GetTranslations("red", "en", wiktionary.IndoEuropean)
+	if len(tr2) != 79 {
+		t.Fatalf(`tr: expected length 79, got %v`, len(tr2))
 	}
 
 }
