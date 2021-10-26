@@ -152,6 +152,35 @@ func TestMainPartial(t *testing.T) {
 
 }
 
+func TestMainRestrictedLanguages(t *testing.T) {
+	// only translate a few languages
+	var options wiktionary.WiktionaryOptions
+	options.RequiredSections = wiktionary.Sec_Parts | wiktionary.Sec_Translations
+	options.RequiredLanguages = []string{"de", "es", "fr"}
+
+	lw, err := wiktionary.GetWordWithOptions("red", "en", options)
+	if err != nil {
+		t.Fatalf(`Error from GetWord: %q`, err)
+	}
+	part := lw.Etymologies[0].Parts[1]
+	if len(part.Translations) != 3 {
+		t.Fatalf(`lw.Etymologies[0].Parts[1].Translations: expected length 3, got %v`, len(part.Translations))
+	}
+
+}
+
+func TestGetTranslations(t *testing.T) {
+	requiredLanguages := []string{"de", "es", "fr"}
+	tr, err := wiktionary.GetTranslations("red", "en", requiredLanguages)
+	if err != nil {
+		t.Fatalf(`Error from GetTranslations: %q`, err)
+	}
+	if len(tr) != 3 {
+		t.Fatalf(`tr: expected length 3, got %v`, len(tr))
+	}
+
+}
+
 func TestMainFrench(t *testing.T) {
 	lw, err := wiktionary.GetWord("rouge", "fr")
 	if err != nil {

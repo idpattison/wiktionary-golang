@@ -438,8 +438,10 @@ func parseTranslationSection(lw *LanguageWord, section Section, options Wiktiona
 						if val, ok := elems["tr"]; ok {
 							tw.Transliteration = val
 						}
-
-						tr = append(tr, tw)
+						// if the language is required
+						if languageRequired(options, tw.Language) {
+							tr = append(tr, tw)
+						}
 					}
 				}
 			}
@@ -571,6 +573,20 @@ func splitTag(tag string) map[string]string {
 }
 
 func sectionRequired(options WiktionaryOptions, section int16) bool {
-	b := options.RequiredSections&section > 0
-	return b
+	return options.RequiredSections&section > 0
+}
+
+func languageRequired(options WiktionaryOptions, langCode string) bool {
+	if len(options.RequiredLanguages) > 0 {
+		if options.RequiredLanguages[0] == "all" {
+			return true
+		} else {
+			for _, val := range options.RequiredLanguages {
+				if langCode == val {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

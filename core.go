@@ -39,6 +39,24 @@ func GetWordWithOptions(word string, langCode string, options WiktionaryOptions)
 	return lw, err
 }
 
+func GetTranslations(word string, langCode string, requiredLanguages []string) ([]TranslatedWord, error) {
+	var options WiktionaryOptions
+	options.RequiredSections = Sec_Parts | Sec_Translations
+	options.RequiredLanguages = requiredLanguages
+	lw, err := processWord(word, langCode, options)
+	if err != nil {
+		return nil, err
+	}
+	var tr []TranslatedWord
+	// iterate across all etymologies and parts to find the translations
+	for _, etym := range lw.Etymologies {
+		for _, part := range etym.Parts {
+			tr = append(tr, part.Translations...)
+		}
+	}
+	return tr, err
+}
+
 func processWord(word string, langCode string, options WiktionaryOptions) (LanguageWord, error) {
 	nilWord := new(LanguageWord)
 	// get the JSON content for the requested word
