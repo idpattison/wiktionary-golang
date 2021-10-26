@@ -23,12 +23,12 @@ func TestMain(t *testing.T) {
 	if lw.Ipa != expected {
 		t.Fatalf(`lw.Ipa: expected %q, got %q`, expected, lw.Ipa)
 	}
-	if len(lw.Pronunciations) != 3 {
-		t.Fatalf(`lw.Pronunciations: expected length 3, got %v`, len(lw.Pronunciations))
+	if len(lw.Pronunciations) != 4 {
+		t.Fatalf(`lw.Pronunciations: expected length 4, got %v`, len(lw.Pronunciations))
 	}
 	expected = "Rhymes: -ɛd"
-	if lw.Pronunciations[2] != expected {
-		t.Fatalf(`lw.Pronunciations[2]: expected %q, got %q`, expected, lw.Pronunciations[2])
+	if lw.Pronunciations[3] != expected {
+		t.Fatalf(`lw.Pronunciations[3]: expected %q, got %q`, expected, lw.Pronunciations[3])
 	}
 	if len(lw.Etymologies) != 3 {
 		t.Fatalf(`lw.Etymologies: expected length 3, got %v`, len(lw.Etymologies))

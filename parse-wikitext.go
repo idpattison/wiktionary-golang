@@ -78,6 +78,16 @@ func parsePronunciationSection(lw *LanguageWord, section Section, options Wiktio
 	for _, line := range section.lines {
 		if strings.HasPrefix(line, "*") {
 			// process the pronunciation line
+			// special handling for the audio line
+			prTag := searchForTag(line, "audio")
+			if prTag != "" {
+				elems := splitTag(prTag)
+				if val, ok := elems["2"]; ok {
+					pr = append(pr, "Audio: https://en.wiktionary.org/wiki/File:"+val)
+				}
+				continue
+			}
+
 			text, _ = getConvertedTextFromWiktionary(line[2:], lw.Word, lw.LanguageCode)
 			if sectionRequired(options, Sec_Extended_Pronunciation) {
 				if text != "" {
@@ -414,21 +424,23 @@ func parseTranslationSection(lw *LanguageWord, section Section, options Wiktiona
 			break
 		}
 		if strings.HasPrefix(line, "*") {
-			transTag := searchForTag(line, "t") // NB this should find tt, t+ and tt+ as well
-			if transTag != "" {
-				// we have a translated word - decode the tag
-				var tw TranslatedWord
-				elems := splitTag(transTag)
-				if val, ok := elems["1"]; ok {
-					tw.Language = val
-				}
-				if val, ok := elems["2"]; ok {
-					tw.Word = val
-					if val, ok := elems["tr"]; ok {
-						tw.Transliteration = val
+			tags := getAllTags(line)
+			for _, tag := range tags {
+				elems := splitTag(tag[1])
+				// if we have a translation tag
+				if elems["0"] == "t" || elems["0"] == "t+" || elems["0"] == "tt" || elems["0"] == "tt+" {
+					var tw TranslatedWord
+					if val, ok := elems["1"]; ok {
+						tw.Language = val
 					}
+					if val, ok := elems["2"]; ok {
+						tw.Word = val
+						if val, ok := elems["tr"]; ok {
+							tw.Transliteration = val
+						}
 
-					tr = append(tr, tw)
+						tr = append(tr, tw)
+					}
 				}
 			}
 		}
