@@ -125,6 +125,8 @@ func parsePronunciationSection(lw *LanguageWord, section Section, options Wiktio
 func parseEtymologySection(lw *LanguageWord, section Section, options WiktionaryOptions) {
 	var etym Etymology
 	etym.Name = strings.Trim(section.header, "=")
+	lw.Etymologies = append(lw.Etymologies, etym)
+	currentEtym := len(lw.Etymologies) - 1
 
 	// read each line and process tags
 	// we will concatenate the text with new lines as the etymology may span multiple paragraphs
@@ -134,82 +136,162 @@ func parseEtymologySection(lw *LanguageWord, section Section, options Wiktionary
 		if sectionRequired(options, Sec_Etymology_Text) || sectionRequired(options, Sec_Etymology_Words) {
 			text, _ := getConvertedTextFromWiktionary(line, lw.Word, lw.LanguageCode)
 			if sectionRequired(options, Sec_Etymology_Text) {
-				etym.Text += text
+				lw.Etymologies[currentEtym].Text += text
 			}
 			if text != "" {
-				etym.Text += "\n"
+				lw.Etymologies[currentEtym].Text += "\n"
 			}
 
 			// get the word link tags from the etymology
 			if sectionRequired(options, Sec_Etymology_Words) {
-				tags := getAllTags(line)
-				for _, tag := range tags {
-					var link LinkedWord
-
-					elems := splitTag(tag[1])
-					// ignore the m tag, it's sometimes used in etymologies, and it's ambiguous
-					if elems["0"] == "m" || elems["0"] == "mention" {
-						continue
-					}
-
-					// depending on the tag type, process accordingly
-					switch elems["0"] {
-					case "root":
-						link.Relationship = Root
-						link.Word = elems["3"]
-						link.Language = elems["2"]
-					case "inh", "inherited":
-						link.Relationship = Inherited
-						link.Word = elems["3"]
-						link.Language = elems["2"]
-						if val, ok := elems["5"]; ok {
-							link.Meaning = val
-						}
-						// the meaning should appear at slot 4, but sometimes it's at slot 5
-						// this is non-standard, but happens
-						if val, ok := elems["6"]; ok && link.Meaning == "" {
-							link.Meaning = val
-						}
-						if val, ok := elems["tr"]; ok {
-							link.Transliteration = val
-						}
-					case "cog", "cognate":
-						link.Relationship = Cognate
-						link.Word = elems["2"]
-						link.Language = elems["1"]
-						if val, ok := elems["4"]; ok {
-							link.Meaning = val
-						}
-						// the meaning should appear at slot 4, but sometimes it's at slot 5
-						// this is non-standard, but happens
-						if val, ok := elems["5"]; ok && link.Meaning == "" {
-							link.Meaning = val
-						}
-						if val, ok := elems["tr"]; ok {
-							link.Transliteration = val
-						}
-					}
-
-					// if we have a word in a non-Latin script but no transliteration
-					latinRe := regexp.MustCompile(`\p{Latin}`)
-					if len(link.Word) > 0 && !latinRe.MatchString(link.Word) {
-						re := regexp.MustCompile(link.Word + ` *\((.*?)[\),]`)
-						match := re.FindStringSubmatch(text)
-						if len(match) > 1 {
-							link.Transliteration = match[1]
-						}
-					}
-
-					// if the target word exists, save it
-					if link.Word != "" && link.Word != "-" {
-						etym.Words = append(etym.Words, link)
-					}
-				}
+				parseLinkedWord(lw, line, text, options)
 			}
 		}
 	}
 
-	lw.Etymologies = append(lw.Etymologies, etym)
+}
+
+func parseLinkedWord(lw *LanguageWord, line string, text string, options WiktionaryOptions) {
+	currentEtym := len(lw.Etymologies) - 1
+
+	tags := getAllTags(line)
+	for _, tag := range tags {
+		var link LinkedWord
+		link.Attributes = make(map[string]bool)
+
+		elems := splitTag(tag[1])
+		// ignore the m tag, it's sometimes used in etymologies, and it's ambiguous
+		if elems["0"] == "m" || elems["0"] == "mention" {
+			continue
+		}
+
+		// depending on the tag type, process accordingly
+		switch elems["0"] {
+		case "root":
+			link.Relationship = Root
+			if val, ok := elems["3"]; ok {
+				link.Word = val
+			}
+			if val, ok := elems["2"]; ok {
+				link.Language = val
+			}
+		case "inh", "inherited", "bor", "borrowed", "lbor", "learned borrowing",
+			"sl", "semantic loan", "der", "derived",
+			"cal", "clq", "calque", "pcal", "pclq", "partial calque":
+			link.Relationship = Inherited
+			if val, ok := elems["3"]; ok {
+				link.Word = val
+			}
+			if val, ok := elems["2"]; ok {
+				link.Language = val
+			}
+			if val, ok := elems["5"]; ok {
+				link.Meaning = val
+			}
+			// the meaning should appear at slot 4, but sometimes it's at slot 5
+			// this is non-standard, but happens
+			if val, ok := elems["6"]; ok && link.Meaning == "" {
+				link.Meaning = val
+			}
+		case "cog", "cognate":
+			link.Relationship = Cognate
+			if val, ok := elems["2"]; ok {
+				link.Word = val
+			}
+			if val, ok := elems["1"]; ok {
+				link.Language = val
+			}
+			if val, ok := elems["4"]; ok {
+				link.Meaning = val
+			}
+			// the meaning should appear at slot 4, but sometimes it's at slot 5
+			// this is non-standard, but happens
+			if val, ok := elems["5"]; ok && link.Meaning == "" {
+				link.Meaning = val
+			}
+		case "desc", "descendant", "desctree":
+			link.Relationship = Descendant
+			if val, ok := elems["1"]; ok {
+				link.Language = val
+			}
+			if val, ok := elems["2"]; ok {
+				link.Word = val
+			}
+
+		}
+
+		// handle non-standard inheritance
+		if elems["0"] == "borrowed" || elems["0"] == "bor" ||
+			elems["0"] == "learned borrowing" || elems["0"] == "lbor" {
+			link.Attributes["borrowed"] = true
+		}
+		if _, ok := elems["bor"]; ok {
+			link.Attributes["borrowed"] = true
+		}
+		if _, ok := elems["lbor"]; ok {
+			link.Attributes["borrowed"] = true
+		}
+		if _, ok := elems["slb"]; ok {
+			link.Attributes["borrowed"] = true
+		}
+		if elems["0"] == "cal" || elems["0"] == "clq" || elems["0"] == "calque" ||
+			elems["0"] == "pcal" || elems["0"] == "pclq" || elems["0"] == "partial calque" {
+			link.Attributes["calque"] = true
+		}
+		if _, ok := elems["clq"]; ok {
+			link.Attributes["calque"] = true
+		}
+		if _, ok := elems["pclq"]; ok {
+			link.Attributes["calque"] = true
+		}
+		if elems["0"] == "sl" || elems["0"] == "semantic loan" {
+			link.Attributes["semantic loan"] = true
+		}
+		if _, ok := elems["sml"]; ok {
+			link.Attributes["semantic loan"] = true
+		}
+		if elems["0"] == "der" || elems["0"] == "derived" {
+			link.Attributes["derived"] = true
+		}
+		if _, ok := elems["der"]; ok {
+			link.Attributes["derived"] = true
+		}
+		if _, ok := elems["unc"]; ok {
+			link.Attributes["unclear"] = true
+		}
+
+		// handle transliterations
+		if val, ok := elems["tr"]; ok {
+			link.Transliteration = val
+		}
+
+		// if we have a word in a non-Latin script but no transliteration
+		latinRe := regexp.MustCompile(`\p{Latin}`)
+		if len(link.Word) > 0 && !latinRe.MatchString(link.Word) {
+			re := regexp.MustCompile(link.Word + ` *\((.*?)[\),]`)
+			match := re.FindStringSubmatch(text)
+			if len(match) > 1 {
+				link.Transliteration = match[1]
+			}
+		}
+
+		// if the target word exists, save it
+		if link.Word != "" && link.Word != "-" {
+			lw.Etymologies[currentEtym].Words = append(lw.Etymologies[currentEtym].Words, link)
+		}
+	}
+
+}
+
+func parseDescendantSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
+	// read in all descendant words and add them to LinkedWords in the current Etymology
+	for _, line := range section.lines {
+		if strings.HasPrefix(line, "*") {
+			text, _ := getConvertedTextFromWiktionary(line, lw.Word, lw.LanguageCode)
+			parseLinkedWord(lw, line, text, options)
+		}
+	}
+
 }
 
 func parsePartofSpeechSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
@@ -456,34 +538,6 @@ func parseTranslationSection(lw *LanguageWord, section Section, options Wiktiona
 			lw.Etymologies[currentEtym].Parts[currentPart].Translations = tr
 		}
 	}
-}
-
-func parseDescendantSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
-	// read in all descendant words and add them to LinkedWords in the current Etymology
-	for _, line := range section.lines {
-		if strings.HasPrefix(line, "*") {
-			descTag := searchForTag(line, "desc") // NB this will also pick up desctree
-			if descTag != "" {
-				// decode the tag
-				var link LinkedWord
-				elems := splitTag(descTag)
-				if val, ok := elems["1"]; ok {
-					link.Language = val
-					if val, ok := elems["2"]; ok {
-						link.Word = val
-						if _, ok := elems["bor"]; ok {
-							link.Relationship = Descendant
-						}
-						// add to the current etymology
-						if len(lw.Etymologies) > 0 {
-							lw.Etymologies[len(lw.Etymologies)-1].Words = append(lw.Etymologies[len(lw.Etymologies)-1].Words, link)
-						}
-					}
-				}
-			}
-		}
-	}
-
 }
 
 func parseOtherSections(lw *LanguageWord, section Section, options WiktionaryOptions) {

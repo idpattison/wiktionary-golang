@@ -1,6 +1,7 @@
 package wiktionary
 
 import (
+	"errors"
 	"os"
 )
 
@@ -29,7 +30,7 @@ const Sec_All = 0x0FFF
 func GetWord(word string, langCode string) (LanguageWord, error) {
 	var options WiktionaryOptions
 	options.RequiredSections = Sec_All
-	options.RequiredLanguages = []string{"all"}
+	options.RequiredLanguages = AllLanguages
 	lw, err := processWord(word, langCode, options)
 	return lw, err
 }
@@ -55,6 +56,20 @@ func GetTranslations(word string, langCode string, requiredLanguages []string) (
 		}
 	}
 	return tr, err
+}
+
+func GetIpaPronunciation(word string, langCode string) (string, error) {
+	var options WiktionaryOptions
+	options.RequiredSections = Sec_IPA
+	options.RequiredLanguages = AllLanguages
+	lw, err := processWord(word, langCode, options)
+	if err != nil {
+		return "", err
+	}
+	if lw.Ipa == "" {
+		return "", errors.New("no IPA found")
+	}
+	return lw.Ipa, nil
 }
 
 func processWord(word string, langCode string, options WiktionaryOptions) (LanguageWord, error) {

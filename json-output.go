@@ -31,16 +31,16 @@ const (
 	Root       string = "root"
 	Inherited  string = "inherited"
 	Cognate    string = "cognate"
-	Borrowed   string = "borrowed"
 	Descendant string = "descendant"
 )
 
 type LinkedWord struct {
-	Relationship    string `json:"type"`
-	Language        string `json:"lang"`
-	Word            string `json:"word"`
-	Meaning         string `json:"meaning,omitempty"`
-	Transliteration string `json:"translit,omitempty"`
+	Relationship    string          `json:"type"`
+	Language        string          `json:"lang"`
+	Word            string          `json:"word"`
+	Meaning         string          `json:"meaning,omitempty"`
+	Transliteration string          `json:"translit,omitempty"`
+	Attributes      map[string]bool `json:"attrs,omitempty"`
 }
 
 type TranslatedWord struct {

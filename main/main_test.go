@@ -187,6 +187,18 @@ func TestGetTranslations(t *testing.T) {
 
 }
 
+func TestGetIpaPronunciation(t *testing.T) {
+	ipa, err := wiktionary.GetIpaPronunciation("red", "en")
+	if err != nil {
+		t.Fatalf(`Error from GetIpaPronunciation: %q`, err)
+	}
+	expIpa := "/ɹɛd/"
+	if ipa != expIpa {
+		t.Fatalf(`tr: expected length %q, got %q`, expIpa, ipa)
+	}
+
+}
+
 func TestMainFrench(t *testing.T) {
 	lw, err := wiktionary.GetWord("rouge", "fr")
 	if err != nil {
@@ -219,6 +231,17 @@ func TestMainOldEnglish(t *testing.T) {
 		t.Fatalf(`lw.Etymologies[0].Parts[0]: expected %q - %q, got %q - %q`,
 			expPart, expHead, part.Name, part.Headword)
 	}
+
+	//test descendants
+	expType := "descendant"
+	expLang := "enm"
+	expWord := "grene"
+	word := lw.Etymologies[0].Words[6]
+	if word.Relationship != expType || word.Language != expLang || word.Word != expWord {
+		t.Fatalf(`lw.Etymologies[0].Words[6]: expected type %q lang %q word %q, got %q %q %q`,
+			expType, expLang, expWord, word.Relationship, word.Language, word.Word)
+	}
+
 }
 
 func TestMainProtoGermanic(t *testing.T) {
