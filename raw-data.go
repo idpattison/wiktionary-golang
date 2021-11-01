@@ -200,8 +200,8 @@ func getConvertedTextFromWiktionary(text string, word string, langCode string) (
 	re := regexp.MustCompile(`text":"(.*?)\\n</p.*>\\n<!--`)
 	match := re.FindStringSubmatch(returnedText)
 	if len(match) == 0 {
-		msg := fmt.Sprintf("Text generation error for text '%s'", text)
-		return "", errors.New(msg)
+		// if there is no relevant text, return the original tags, so we at least have something
+		return text, nil
 	}
 
 	// remove anything in <...> HTML braces
@@ -215,6 +215,7 @@ func getConvertedTextFromWiktionary(text string, word string, langCode string) (
 	convertedText = strings.ReplaceAll(convertedText, "\u0026#160;", " ")
 	convertedText = strings.ReplaceAll(convertedText, "\u0026#8206;", " ") // left-to-right marker
 	convertedText = strings.ReplaceAll(convertedText, "\u0026lt;", "<")
+	convertedText = strings.ReplaceAll(convertedText, "\u003c", "<")
 
 	return convertedText, nil
 

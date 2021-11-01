@@ -47,7 +47,10 @@ func parseSection(lw *LanguageWord, section Section, options WiktionaryOptions) 
 			if sectionRequired(options, Sec_IPA) || sectionRequired(options, Sec_Extended_Pronunciation) {
 				parsePronunciationSection(lw, section, options)
 			}
-		case "Noun", "Verb", "Adjective":
+		case "Noun", "Verb", "Adjective", "Adverb", "Article", "Ambiposition", "Circumposition", "Classifier",
+			"Conjunction", "Contraction", "Counter", "Determiner", "Ideophone", "Interjection", "Numeral",
+			"Participle", "Particle", "Postposition", "Preposition", "Proper noun", "Circumfix", "Combining form",
+			"Infix", "Interfix", "Prefix", "Root", "Suffix", "Phrase", "Proverb", "Prepositional phrase":
 			if sectionRequired(options, Sec_Parts) {
 				parsePartofSpeechSection(lw, section, options)
 			}
@@ -333,6 +336,11 @@ func parsePartofSpeechSection(lw *LanguageWord, section Section, options Wiktion
 
 	if len(lw.Etymologies) > 0 {
 		lw.Etymologies[len(lw.Etymologies)-1].Parts = append(lw.Etymologies[len(lw.Etymologies)-1].Parts, pos)
+	} else { // if there is no etymology section yet (as may happen with a root) then create a default one
+		var etym Etymology
+		etym.Name = "Inferred Etymology"
+		lw.Etymologies = append(lw.Etymologies, etym)
+		lw.Etymologies[0].Parts = append(lw.Etymologies[0].Parts, pos)
 	}
 }
 

@@ -267,3 +267,10 @@ func TestMainProtoGermanic(t *testing.T) {
 		}
 	}
 }
+
+func TestMainProtoIE(t *testing.T) {
+	_, err := wiktionary.GetWord("*h₁rewdʰ-", "ine-pro")
+	if err != nil {
+		t.Fatalf(`Error from GetWord: %q`, err)
+	}
+}
