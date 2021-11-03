@@ -40,6 +40,14 @@ func GetWordWithOptions(word string, langCode string, options WiktionaryOptions)
 	return lw, err
 }
 
+func GetMeaning(word string, langCode string) (string, error) {
+	var options WiktionaryOptions
+	options.RequiredSections = Sec_Parts | Sec_Meanings
+	options.RequiredLanguages = AllLanguages
+	lw, err := processWord(word, langCode, options)
+	return lw.Meaning, err
+}
+
 func GetTranslations(word string, langCode string, requiredLanguages []string) ([]TranslatedWord, error) {
 	var options WiktionaryOptions
 	options.RequiredSections = Sec_Parts | Sec_Translations

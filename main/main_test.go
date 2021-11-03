@@ -274,3 +274,16 @@ func TestMainProtoIE(t *testing.T) {
 		t.Fatalf(`Error from GetWord: %q`, err)
 	}
 }
+
+func TestGetMeaning(t *testing.T) {
+	meaning, err := wiktionary.GetMeaning("green", "en")
+	if err != nil {
+		t.Fatalf(`Error from GetMeaning: %q`, err)
+	}
+	expMeaning := "Having green as its color."
+	if meaning != expMeaning {
+		t.Fatalf(`GetMeaning: expected %q, got %q`,
+			expMeaning, meaning)
+	}
+
+}
