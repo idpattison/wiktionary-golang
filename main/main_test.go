@@ -37,8 +37,8 @@ func TestMain(t *testing.T) {
 	if lw.Etymologies[0].Name != expected {
 		t.Fatalf(`lw.Etymologies[0].Name: expected %q, got %q`, expected, lw.Etymologies[2].Name)
 	}
-	if len(lw.Etymologies[0].Words) != 23 {
-		t.Fatalf(`lw.Etymologies[0].Words: expected length 23, got %v`, len(lw.Etymologies[0].Words))
+	if len(lw.Etymologies[0].Words) != 22 {
+		t.Fatalf(`lw.Etymologies[0].Words: expected length 22, got %v`, len(lw.Etymologies[0].Words))
 	}
 	expType := "root"
 	expLang := "ine-pro"
@@ -59,9 +59,9 @@ func TestMain(t *testing.T) {
 	expType = "cognate"
 	expLang = "fy"
 	expWord = "read"
-	word = lw.Etymologies[0].Words[5]
+	word = lw.Etymologies[0].Words[6]
 	if word.Relationship != expType || word.Language != expLang || word.Word != expWord {
-		t.Fatalf(`lw.Etymologies[0].Words[5]: expected type %q lang %q word %q, got %q %q %q`,
+		t.Fatalf(`lw.Etymologies[0].Words[6]: expected type %q lang %q word %q, got %q %q %q`,
 			expType, expLang, expWord, word.Relationship, word.Language, word.Word)
 	}
 
@@ -95,8 +95,8 @@ func TestMain(t *testing.T) {
 		t.Fatalf(`lw.Etymologies[0].Parts[0]: expected %q - %q, got %q - %q`,
 			expPart, expHead, part.Name, part.Headword)
 	}
-	if len(part.Meanings) != 7 {
-		t.Fatalf(`lw.Etymologies[0].Parts[0].Meanings: expected length 7, got %v`, len(part.Meanings))
+	if len(part.Meanings) != 8 {
+		t.Fatalf(`lw.Etymologies[0].Parts[0].Meanings: expected length 8, got %v`, len(part.Meanings))
 	}
 	if len(part.Attributes) != 2 {
 		t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes: expected length 2, got %v`, len(part.Attributes))
@@ -109,8 +109,8 @@ func TestMain(t *testing.T) {
 		}
 	}
 	expected = "(particle physics) Having a color charge of red."
-	if part.Meanings[6] != expected {
-		t.Fatalf(`lw.Etymologies[0].Parts[0].Meanings[6]: expected %q, got %q`, expected, part.Meanings[6])
+	if part.Meanings[7] != expected {
+		t.Fatalf(`lw.Etymologies[0].Parts[0].Meanings[7]: expected %q, got %q`, expected, part.Meanings[6])
 	}
 	expPart = "Noun"
 	expHead = "red (countable and uncountable, plural reds)"
@@ -181,8 +181,8 @@ func TestGetTranslations(t *testing.T) {
 
 	// test the Indo European subset
 	tr2, _ := wiktionary.GetTranslations("red", "en", wiktionary.IndoEuropean)
-	if len(tr2) != 79 {
-		t.Fatalf(`tr: expected length 79, got %v`, len(tr2))
+	if len(tr2) != 81 {
+		t.Fatalf(`tr: expected length 81, got %v`, len(tr2))
 	}
 
 }

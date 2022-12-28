@@ -197,7 +197,7 @@ func getConvertedTextFromWiktionary(text string, word string, langCode string) (
 	returnedText := string(body)
 
 	// strip out the part of interest
-	re := regexp.MustCompile(`text":"(.*?)\\n</p.*>\\n<!--`)
+	re := regexp.MustCompile(`text":"(.*?)</p.*>\\n<!--`)
 	match := re.FindStringSubmatch(returnedText)
 	if len(match) == 0 {
 		// if there is no relevant text, return the original tags, so we at least have something
@@ -216,6 +216,9 @@ func getConvertedTextFromWiktionary(text string, word string, langCode string) (
 	convertedText = strings.ReplaceAll(convertedText, "\u0026#8206;", " ") // left-to-right marker
 	convertedText = strings.ReplaceAll(convertedText, "\u0026lt;", "<")
 	convertedText = strings.ReplaceAll(convertedText, "\u003c", "<")
+
+	// strip any newlines at the beginning or end
+	convertedText = strings.Trim(convertedText, "\\n")
 
 	return convertedText, nil
 

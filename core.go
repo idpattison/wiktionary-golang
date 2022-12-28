@@ -80,6 +80,20 @@ func GetIpaPronunciation(word string, langCode string) (string, error) {
 	return lw.Ipa, nil
 }
 
+func GetEtymologyTree(word string, langCode string, languages []string) TreeNode {
+	// get a full etymology tree containing ancestor words
+	etym, err := getEtymologyTree(word, langCode, languages)
+	if err != nil {
+		return etym
+	}
+	return etym // TODO
+}
+
+func GetLanguageFromCode(code string) string {
+	// convert a language code to the full name, e.g. for "en" return "English"
+	return getLanguageFromCode(code)
+}
+
 func processWord(word string, langCode string, options WiktionaryOptions) (LanguageWord, error) {
 	nilWord := new(LanguageWord)
 	// get the JSON content for the requested word
