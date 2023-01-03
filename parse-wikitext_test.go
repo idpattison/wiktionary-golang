@@ -43,6 +43,16 @@ func TestParseNoun(t *testing.T) {
 	testAttributes(t, &pos, "{{nl-noun|n|-@en|pl2=-s|artikeltje}}", "diminutive", "artikeltje n", true)
 }
 
+func TestParseNounDeclension(t *testing.T) {
+	var pos PartOfSpeech
+	pos.Attributes = make(map[string]string)
+	pos.Name = "Noun"
+
+	// test the basic English form
+	pos.Headword = "church (plural churches)"
+	testAttributes(t, &pos, "{{en-noun|s}}", "count", "countable", true)
+}
+
 func TestParseAdjective(t *testing.T) {
 	var pos PartOfSpeech
 	pos.Attributes = make(map[string]string)
@@ -80,10 +90,6 @@ func TestParseVerb(t *testing.T) {
 	pos.Headword = "can (third-person singular simple present can, no present participle, simple past could, no past participle)"
 	testAttributes(t, &pos, "{{en-verb}}", "past participle", "", false)
 
-	// test French
-	// pos.Headword = "compact (feminine singular compacte, masculine plural compacts, feminine plural compactes)"
-	// testAttributes(t, &pos, "{{fr-adj}}", "masculine plural", "compacts", true)
-
 	// // test German
 	pos.Headword = "laufen (class 7 strong, third-person singular present läuft, past tense lief, past participle gelaufen, auxiliary sein)"
 	testAttributes(t, &pos, "{{de-verb|laufen<läuft#lief,gelaufen.sein>}}", "type", "class 7 strong", true)
@@ -115,4 +121,33 @@ func testAttributes(t *testing.T, pos *PartOfSpeech, headTag string, attr string
 			t.Fatalf(`parse%s: no %v attribute for %q`, pos.Name, attr, headTag)
 		}
 	}
+}
+
+// func testExtendedAttributes(t *testing.T, pos *PartOfSpeech, headTag string, attr string, expected string, shouldExist bool) {
+// 	for k := range pos.Attributes {
+// 		delete(pos.Attributes, k)
+// 	}
+// 	parseExtendedPartSection()
+// 	if val, ok := pos.Attributes[attr]; ok {
+// 		if shouldExist {
+// 			if val != expected {
+// 				t.Fatalf(`parse%s: expected %q, got %q`, pos.Name, expected, val)
+// 			}
+// 		} else {
+// 			t.Fatalf(`parse%s: %v attribute found for %q; should not exist`, pos.Name, attr, headTag)
+// 		}
+// 	} else {
+// 		if shouldExist {
+// 			t.Fatalf(`parse%s: no %v attribute for %q`, pos.Name, attr, headTag)
+// 		}
+// 	}
+// }
+
+func TestHtmlTableProcessing(t *testing.T) {
+	var pos PartOfSpeech
+	pos.Attributes = make(map[string]string)
+	pos.Name = "Noun"
+
+	pos.Headword = "lūna f (genitive lūnae); first declension"
+	testAttributes(t, &pos, "{{la-ndecl|l\u016bna<1>}}", "genitive", "lūnae", true)
 }

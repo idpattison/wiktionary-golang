@@ -177,7 +177,7 @@ func getPageTitle(word string, langCode string) string {
 
 }
 
-func getConvertedTextFromWiktionary(text string, word string, langCode string) (string, error) {
+func getTextFromWiktionary(text string, word string, langCode string) (string, error) {
 	// for the given text with tags, retrieve the equivalent text from Wiktionary
 	urlHead := "https://en.wiktionary.org/w/api.php?action=parse&text="
 	urlTail := "&prop=text&title=" + getPageTitle(word, langCode) + "&formatversion=2&format=json"
@@ -195,6 +195,13 @@ func getConvertedTextFromWiktionary(text string, word string, langCode string) (
 		return "", err
 	}
 	returnedText := string(body)
+
+	return returnedText, nil
+}
+
+func getConvertedTextFromWiktionary(text string, word string, langCode string) (string, error) {
+	// for the given text with tags, retrieve the converted text from Wiktionary
+	returnedText, _ := getTextFromWiktionary(text, word, langCode)
 
 	// strip out the part of interest
 	re := regexp.MustCompile(`text":"(.*?)</p.*>\\n<!--`)
@@ -221,5 +228,20 @@ func getConvertedTextFromWiktionary(text string, word string, langCode string) (
 	convertedText = strings.Trim(convertedText, "\\n")
 
 	return convertedText, nil
+}
 
+func getTableFromWiktionary(text string, word string, langCode string) (string, error) {
+	// for the given text with tags, retrieve the equivalent HTML from Wiktionary
+	returnedText, _ := getTextFromWiktionary(text, word, langCode)
+
+	// strip out the part of interest - in this case the tables
+	re := regexp.MustCompile(`(<table.*?</table>)`)
+	match := re.FindStringSubmatch(returnedText)
+	if len(match) == 0 {
+		// if there is no relevant text, return the original tags, so we at least have something
+		return text, nil
+	}
+
+	// return the HTML table
+	return match[1], nil
 }

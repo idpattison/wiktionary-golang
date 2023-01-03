@@ -54,6 +54,10 @@ func parseSection(lw *LanguageWord, section Section, options WiktionaryOptions) 
 			if sectionRequired(options, Sec_Parts) {
 				parsePartofSpeechSection(lw, section, options)
 			}
+		case "Declension", "Conjugation":
+			if sectionRequired(options, Sec_Part_Extended) {
+				parseExtendedPartSection(lw, section, options)
+			}
 		case "Translations":
 			if sectionRequired(options, Sec_Translations) {
 				parseTranslationSection(lw, section, options)
@@ -329,7 +333,7 @@ func parsePartofSpeechSection(lw *LanguageWord, section Section, options Wiktion
 			parseAdjective(&pos, headTag)
 		case "Verb":
 			parseVerb(&pos, headTag)
-			// other parts of speech suchas conjunctions are generally simpler
+			// other parts of speech such as conjunctions are generally simpler
 			// they may have attributes but we will rely on the headword text
 		}
 	}
@@ -472,6 +476,27 @@ func parseVerb(pos *PartOfSpeech, headTag string) {
 		getHeadwordItem(pos, "type", 0)
 	}
 
+}
+
+func parseExtendedPartSection(lw *LanguageWord, section Section, options WiktionaryOptions) {
+	// there must be an existing part of speech in an existing etymology
+	currentEtym := len(lw.Etymologies) - 1
+	if currentEtym < 0 {
+		return
+	}
+	currentPart := len(lw.Etymologies[currentEtym].Parts) - 1
+	if currentPart < 0 {
+		return
+	}
+
+	// read each line and process tags
+	for _, line := range section.lines {
+		// the headword line will have tags
+		if strings.HasPrefix(line, "{{") {
+			text, _ := getTableFromWiktionary(line, lw.Word, lw.LanguageCode)
+			parseHtmlTable(text)
+		}
+	}
 }
 
 func getHeadwordForm(pos *PartOfSpeech, form string) bool {
