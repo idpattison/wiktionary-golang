@@ -8,6 +8,16 @@ import (
 	"golang.org/x/net/html"
 )
 
+func parseHtml(text string) string {
+	// parse the HTML into a tree
+	doc, err := html.Parse(strings.NewReader(text))
+	if err != nil {
+		log.Fatal(err)
+	}
+	t := getElementText(doc)
+	return t
+}
+
 func parseInflectionTable(part *PartOfSpeech, text string) {
 	// parse the HTML into a tree
 	doc, err := html.Parse(strings.NewReader(text))

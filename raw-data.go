@@ -211,18 +211,24 @@ func getConvertedTextFromWiktionary(text string, word string, langCode string) (
 		return text, nil
 	}
 
+	// get the text associated with the HTML block
+	convertedText := parseHtml(match[1])
+
+	// NB we converted this section to using HTML parsing with the golang.org/x/net/html library
+	// original code left below in case any problems crop up
+
 	// remove anything in <...> HTML braces
-	re = regexp.MustCompile(`<(.*?)>`)
-	convertedText := re.ReplaceAllString(match[1], "")
+	// re = regexp.MustCompile(`<(.*?)>`)
+	// convertedText := re.ReplaceAllString(match[1], "")
 
 	// replace explicit spaces with actual spaces
-	convertedText = strings.ReplaceAll(convertedText, "&#32;", " ")
-	convertedText = strings.ReplaceAll(convertedText, "&nbsp", " ")
-	convertedText = strings.ReplaceAll(convertedText, "&#160;", " ")
-	convertedText = strings.ReplaceAll(convertedText, "\u0026#160;", " ")
-	convertedText = strings.ReplaceAll(convertedText, "\u0026#8206;", " ") // left-to-right marker
-	convertedText = strings.ReplaceAll(convertedText, "\u0026lt;", "<")
-	convertedText = strings.ReplaceAll(convertedText, "\u003c", "<")
+	// convertedText = strings.ReplaceAll(convertedText, "&#32;", " ")
+	// convertedText = strings.ReplaceAll(convertedText, "&nbsp", " ")
+	// convertedText = strings.ReplaceAll(convertedText, "&#160;", " ")
+	// convertedText = strings.ReplaceAll(convertedText, "\u0026#160;", " ")
+	// convertedText = strings.ReplaceAll(convertedText, "\u0026#8206;", " ") // left-to-right marker
+	// convertedText = strings.ReplaceAll(convertedText, "\u0026lt;", "<")
+	// convertedText = strings.ReplaceAll(convertedText, "\u003c", "<")
 
 	// strip any newlines at the beginning or end
 	convertedText = strings.Trim(convertedText, "\\n")

@@ -456,8 +456,9 @@ func parseVerb(pos *PartOfSpeech, headTag string) {
 	tpssp := getHeadwordForm(pos, "third-person singular simple present")
 	tpsps := getHeadwordForm(pos, "third-person singular present")
 	fpsp := getHeadwordForm(pos, "first-person singular present")
+	pi := getHeadwordForm(pos, "present infintive")
 	pt := getHeadwordForm(pos, "present tense")
-	if !tpssp && !tpsps && !fpsp && !pt {
+	if !tpssp && !tpsps && !fpsp && !pi && !pt {
 		getHeadwordForm(pos, "present")
 	}
 	fpspt := getHeadwordForm(pos, "first-person singular preterite")
@@ -469,7 +470,9 @@ func parseVerb(pos *PartOfSpeech, headTag string) {
 	getHeadwordForm(pos, "past subjunctive")
 	getHeadwordForm(pos, "perfect tense")
 	getHeadwordForm(pos, "imperitive")
-	getHeadwordForm(pos, "infinitive")
+	if !pi {
+		getHeadwordForm(pos, "infinitive")
+	}
 	getHeadwordForm(pos, "auxiliary")
 	getHeadwordForm(pos, "type")  // French verbs use this for auxiliary, defective etc
 	if tagMap["0"] == "de-verb" { // first headword item in German verbs is the type
