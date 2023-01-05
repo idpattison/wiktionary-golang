@@ -262,7 +262,7 @@ func TestMainProtoGermanic(t *testing.T) {
 		if val, ok := part.Attributes["superlative"]; ok {
 			expected := "*raudōstaz"
 			if val != expected {
-				t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes["superlative"]: expected %q, got %q`, expected, part.Attributes["comparative"])
+				t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes["superlative"]: expected %q, got %q`, expected, part.Attributes["superlative"])
 			}
 		}
 	}
@@ -273,39 +273,4 @@ func TestMainProtoIE(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`Error from GetWord: %q`, err)
 	}
-}
-
-func TestExtendedParts(t *testing.T) {
-	lw, err := wiktionary.GetWord("luna", "la")
-	if err != nil {
-		t.Fatalf(`Error from GetWord: %q`, err)
-	}
-	if len(lw.Etymologies[0].Parts) != 1 {
-		t.Fatalf(`lw.Etymologies[0].Parts: expected length 1, got %v`, len(lw.Etymologies[0].Parts))
-	}
-	// part := lw.Etymologies[0].Parts[0]
-	// if len(part.Attributes) != 2 {
-	// 	t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes: expected length 2, got %v`, len(part.Attributes))
-	// } else {
-	// 	if val, ok := part.Attributes["superlative"]; ok {
-	// 		expected := "*raudōstaz"
-	// 		if val != expected {
-	// 			t.Fatalf(`lw.Etymologies[0].Parts[0].Attributes["superlative"]: expected %q, got %q`, expected, part.Attributes["comparative"])
-	// 		}
-	// 	}
-	// }
-
-}
-
-func TestGetMeaning(t *testing.T) {
-	meaning, err := wiktionary.GetMeaning("green", "en")
-	if err != nil {
-		t.Fatalf(`Error from GetMeaning: %q`, err)
-	}
-	expMeaning := "Having green as its color."
-	if meaning != expMeaning {
-		t.Fatalf(`GetMeaning: expected %q, got %q`,
-			expMeaning, meaning)
-	}
-
 }

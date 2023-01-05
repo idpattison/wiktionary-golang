@@ -494,7 +494,7 @@ func parseExtendedPartSection(lw *LanguageWord, section Section, options Wiktion
 		// the headword line will have tags
 		if strings.HasPrefix(line, "{{") {
 			text, _ := getTableFromWiktionary(line, lw.Word, lw.LanguageCode)
-			parseHtmlTable(text)
+			parseInflectionTable(&lw.Etymologies[currentEtym].Parts[currentPart], text)
 		}
 	}
 }
