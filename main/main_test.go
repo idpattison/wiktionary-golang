@@ -224,6 +224,12 @@ func TestMainOldEnglish(t *testing.T) {
 	if len(lw.Etymologies[0].Parts) != 1 {
 		t.Fatalf(`lw.Etymologies[0].Parts: expected length 1, got %v`, len(lw.Etymologies[0].Parts))
 	}
+
+	expMean := "green"
+	if lw.Meaning != expMean {
+		t.Fatalf(`lw.Meaning: expected %q, got %q`, expMean, lw.Meaning)
+	}
+
 	expPart := "Adjective"
 	expHead := "grēne"
 	part := lw.Etymologies[0].Parts[0]

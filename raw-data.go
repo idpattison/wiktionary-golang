@@ -231,7 +231,9 @@ func getConvertedTextFromWiktionary(text string, word string, langCode string) (
 	// convertedText = strings.ReplaceAll(convertedText, "\u003c", "<")
 
 	// strip any newlines at the beginning or end
-	convertedText = strings.Trim(convertedText, "\\n")
+	convertedText = strings.Trim(convertedText, "\n")
+	// deal with the situation where we have "\\n" at the end
+	convertedText = strings.TrimSuffix(convertedText, "\\n")
 
 	return convertedText, nil
 }
