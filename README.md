@@ -8,9 +8,9 @@ The aim of [this library](https://github.com/ianpattison-google/wiktionary-golan
 GetWord(word string, langCode string) (LanguageWord, error)
 GetWordWithOptions(word string, langCode string, options WiktionaryOptions) (LanguageWord, error)
 ~~~
-- word = the required word to be parsed
-- langCode = the code for the language of the word (see languages.go)
-- options = options for more control (see core.go)
+- *word* = the required word to be parsed
+- *langCode* = the code for the language of the word (see languages.go)
+- *options* = options for more control (see core.go)
 
 ## Example
 ~~~
@@ -19,14 +19,13 @@ import (
 )
 
 func main() {
-		lw, err := wiktionary.GetWord("red", "en)
-		if err != nil {
-			log.Fatalln(err)
-		}
+	lw, err := wiktionary.GetWord("red", "en)
+	if err != nil {
+		log.Fatalln(err)
 	}
 }
 ~~~
-lw is a structure containing the parsed word, and a JSON version will be written to the working directory if required.
+*lw* is a structure containing the parsed word, and a JSON version will be written to the working directory if required.
 
 The JSON output looks like this (example is the English word 'red') - this will vary dependent on the options chosen - NB a large number of cognates and translations have been omitted for brevity.
 ~~~
